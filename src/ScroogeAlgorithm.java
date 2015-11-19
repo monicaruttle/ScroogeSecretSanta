@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -19,10 +20,12 @@ import java.util.Random;
  */
 public class ScroogeAlgorithm {
 	
-	private int numberOfPlayers;
-	private String masterList[][];
-	private String exportList[][];
+	private int numberOfPeople;
+	private ArrayList<Person> masterList;
+	private HashMap<Person, Person> exportList;
+	//private String exportList[][];
 	private ArrayList<Integer> alreadyHasSanta;
+	int currentExport = 0;
 
 	public static void main(String[] args) {
 		ScroogeAlgorithm scr = new ScroogeAlgorithm(Integer.parseInt(args[0]));
@@ -32,9 +35,9 @@ public class ScroogeAlgorithm {
 	}
 	
 	public ScroogeAlgorithm(int numberOfPlayers) {
-		this.numberOfPlayers = numberOfPlayers;
-		masterList = new String[numberOfPlayers][3];
-		exportList = new String[numberOfPlayers][4];
+		this.numberOfPeople = numberOfPlayers;
+		masterList = new ArrayList<Person>();
+		exportList = new HashMap<Person, Person>();
 		alreadyHasSanta = new ArrayList<Integer>();
 	}
 	
@@ -51,11 +54,10 @@ public class ScroogeAlgorithm {
 			while ((line = br.readLine()) != null) {
 				String[] user = line.split(comma);
 				
-				//place users from the csv file to a master list of users, with their name and the program/year identifer
-				masterList[i][0] = user[0];
-				masterList[i][1] = user[2]+""+user[1];
-				masterList[i][2] = user[3];
 				
+				Person p = new Person(user[0], Integer.parseInt(user[1]), user[3], user[2]);
+				//place users from the csv file to a master list of users, with their name and the program/year identifer
+				masterList.add(p);
 				i++;
 
 			}
@@ -78,39 +80,34 @@ public class ScroogeAlgorithm {
 	
 	public void matchUsers() {
 		Random r = new Random();
-		int currentExport = 0;
-		for(int i = 0; i < numberOfPlayers; i++) {
+		for(int i = 0; i < numberOfPeople; i++) {
 			
 			//look for another user
 			while(true) {
 				//check again if the random user is already paired
-				int index = r.nextInt(numberOfPlayers);
-				if (alreadyHasSanta.contains(index)) {
+				int index = r.nextInt(numberOfPeople);
+				Person selectedPerson = masterList.get(index);
+				if (exportList.containsValue(selectedPerson)) {
 					continue;
 				}
 				
-				//obtain student information from current student and randomly selected student
-				int masterYear = masterList[i][1].charAt(4);
-				String masterProgram = masterList[i][1].substring(0, 3);
-				int selectedYear = masterList[index][1].charAt(4);
-				String selectedProgram = masterList[index][1].substring(0, 3);
+				Person currentPerson = masterList.get(i);
 				
+				if (exportList.get(selectedPerson) != null)
+					if (exportList.get(selectedPerson).equals(currentPerson))
+						continue;
 				//check to see if they are in both the same program and year. If not, pair them. If so, find another random student.
-				if (masterYear == selectedYear || masterProgram.equals(selectedProgram))
+				if (masterList.get(i).year == masterList.get(index).year || masterList.get(i).program == masterList.get(index).program)
 					continue;
 				else {
-					alreadyHasSanta.add(index);
-					exportList[currentExport][0] = masterList[i][0];
-					exportList[currentExport][1] = masterList[i][2];
-					exportList[currentExport][2] = masterList[index][0];
-					exportList[currentExport][3] = masterList[index][2];
+					exportList.put(currentPerson, selectedPerson);
 					currentExport++;
 					break;
 				}
 			}
 			
 			//check to see if the exported list is full
-			if (exportList[numberOfPlayers-1][1] != null)
+			if (currentExport == numberOfPeople)
 				return;
 		}
 	}
@@ -119,8 +116,9 @@ public class ScroogeAlgorithm {
 		try {
 			PrintWriter writer = new PrintWriter("ScroogeMasterList.csv", "UTF-8");
 			
-			for (int i = 0; i < numberOfPlayers; i++) {
-				writer.println(exportList[i][0] + ", " + exportList[i][1] + ", " + exportList[i][2] + ", " + exportList[i][3]);
+			
+			for (Person p: exportList.keySet()) {
+				writer.println(p.name + ", " + p.email + ", " + exportList.get(p).name + ", " + exportList.get(p).email);
 			}
 			
 			writer.close();
@@ -132,5 +130,6 @@ public class ScroogeAlgorithm {
 			e.printStackTrace();
 		}
 	}
+
 
 }
